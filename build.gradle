@@ -1,5 +1,5 @@
 plugins {
-  id "de.gesellix.docker" version "2015-07-05T16-55-10"
+  id "de.gesellix.docker" version "2016-09-09T17-53-52"
 }
 apply plugin: 'java'
 
