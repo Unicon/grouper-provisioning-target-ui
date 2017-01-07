@@ -14,8 +14,9 @@ metadata about each attribute is stored in the `grouper-ui.properties` file wher
 This enhancement requires a functioning Grouper UI.
 
 ## Build and Installation
-This code cannot be externally compiled, but can only be compiled when connected to the Grouper UI code base. Source files should be
- overlaid into the working directory structure. Rebuild the Grouper UI war file using the standard Grouper build process. 
+The core code can be compiled by running `./gradlew jar`. The artifact library/jar will be found in `./build/libs/`. This jar needs to be placed in appropriate lib directory. It is `TOMCAT_HOME/webapps/grouper/WEB-INF/lib/`. (It is anticipated that this will be applied to a patched app directory.) 
+
+`src/main/webapp/WEB-INF/grouperUi2/group/` contains a directory structure and two jsp files that need to be placed in the expanded Grouper UI webapp: `TOMCAT_HOME/webapps/grouper/WEB-INF/grouperUi2/group/`.
 
 ## Execution
 (There is nothing to directly execute.)
