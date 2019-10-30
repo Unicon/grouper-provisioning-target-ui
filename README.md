@@ -25,19 +25,19 @@ The core code can be compiled by running `./gradlew jar`. The artifact library/j
 The **Grouper UI settings** are used to control how the attributes are rendered on the Provisioning Target page.
 
 > Reference to [attributeName] in the following text refer to a fully qualified attribute name that has had the colons swapped for hyphens.
-> So `etc:attribute:provisioningTargets:google:googleFavoriteFood` needs to be used as `etc-attribute-provisioningTargets-google-googleFavoriteFood`.
+> So `etc:attribute:provisioningTargets:google:googleFavoriteFood` needs to be "encoded" as `etc-attribute-provisioningTargets-google-googleFavoriteFood`.
 
 There are four types of elements that the attribute can be rendered as: Yes/No, True/False, user definable dropdown, and the default, a textbox.
 
-THis is specified as `grouperUi.provisioningTarget.[attributeName].type=<type>`. Possibles include, `yesNo`, `trueFalse`, and `select`. If a 
+This is specified as `grouperUi.provisioningTarget.[attributeName].type=<type>`. Possible options include, `yesNo`, `trueFalse`, and `select`. If a 
 textbox is desired, this property should be commented out, deleted, or left empty. 
  
 
 |Property Name|Default Value|Notes|
 |-------------|-------------|-----|
-|grouperUi.provisioningTarget.[attributeName].type|yesNo, trueFalse, select, (empty/non-existent)|The type of the attribute to render as.|
-|grouperUi.provisioningTarget.[attributeName].default|(n/a)|(optional) The value to set if no value is already set. (see below)|
-|grouperUi.provisioningTarget.[attributeName].lov|(n/a)|a comma separate list of values|
+|custom.provisioningTarget.[attributeName].type|yesNo, trueFalse, select, (empty/non-existent)|The type of the attribute to render as.|
+|custom.provisioningTarget.[attributeName].default|(n/a)|(optional) The value to set if no value is already set. (see below)|
+|custom.provisioningTarget.[attributeName].lov|(n/a)|a comma separate list of values|
 
 If it is a `select` type, the default value, if defined, needs to be in the `lov` list. If the type is `yesNo`, then the default value 
 must be `yes` or `no`, likewise the default value of a `trueFalse` type must be `true` or `false`, if defined.  
@@ -46,26 +46,26 @@ must be `yes` or `no`, likewise the default value of a `trueFalse` type must be 
 
 ```
 # Indicatess which attribute must be on a folder/group to allow it have Provisioning Targets assigned to it.
-nd.provisioningTargetCandidate.attributeDefName = etc:attribute:provisioningTargets:provisioningCandidates
+custom.provisioningTargetCandidate.attributeDefName = etc:attribute:provisioningTargets:provisioningCandidates
 
 # A dropdown with no default.
-grouperUi.provisioningTarget.etc-attribute-provisioningTargets-google-googleFavoriteFood.lov=pizza,ice cream, chocolate
+custom.provisioningTarget.etc-attribute-provisioningTargets-google-googleFavoriteFood.lov=pizza,ice cream, chocolate
 
 # A yes/no with a default
-grouperUi.provisioningTarget.etc-attribute-provisioningTargets-google-googleSwitchToO365.type=yesNo
-grouperUi.provisioningTarget.etc-attribute-provisioningTargets-google-googleSwitchToO365.default=no
+custom.provisioningTarget.etc-attribute-provisioningTargets-google-googleSwitchToO365.type=yesNo
+custom.provisioningTarget.etc-attribute-provisioningTargets-google-googleSwitchToO365.default=no
 
 # A true/false with a default
-grouperUi.provisioningTarget.etc-attribute-provisioningTargets-google-googleIrishGetsTheTitle.type=trueFalse
-grouperUi.provisioningTarget.etc-attribute-provisioningTargets-google-googleIrishGetsTheTitle.default=true
+custom.provisioningTarget.etc-attribute-provisioningTargets-google-googleIrishGetsTheTitle.type=trueFalse
+custom.provisioningTarget.etc-attribute-provisioningTargets-google-googleIrishGetsTheTitle.default=true
 
 # Setting a default of a textbox type
-grouperUi.provisioningTarget.etc-attribute-provisioningTargets-ad-adOrgUnit.default=something
+custom.provisioningTarget.etc-attribute-provisioningTargets-ad-adOrgUnit.default=something
 
 ```
 
 ## Permissions
-Folders or groups must be tagged with an attribute name, specified by the `nd.provisioningTargetCandidate.attributeDefName property`.
+Folders or groups must be tagged with an attribute name, specified by the `custom.provisioningTargetCandidate.attributeDefName property`.
 Subjects that are allowed to create groups under this folder must have "Read Attribute" privs on the folder where the attribute is placed.
 The subjects must also have `view` privs on the attribute Def
 
