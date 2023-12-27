@@ -1,6 +1,6 @@
-plugins {
-  id "de.gesellix.docker" version "2016-09-09T17-53-52"
-}
+//plugins {
+//  id "de.gesellix.docker" version "2016-09-09T17-53-52"
+//}
 apply plugin: 'java'
 
 version = '1.0.0'
@@ -8,26 +8,28 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 repositories {
-    jcenter()
+//    jcenter()
+    mavenLocal()
+    mavenCentral()
 }
 
 dependencies {
-    compile 'javax.servlet:servlet-api:2.5'
-    compile 'commons-lang:commons-lang:2.6'
-    compile ('edu.internet2.middleware.grouper:grouper:2.3.0') {
+    compileOnly 'javax.servlet:servlet-api:2.5'
+    compileOnly 'commons-lang:commons-lang:2.6'
+    compileOnly ('edu.internet2.middleware.grouper:grouper:2.3.0') {
         transitive = false
     }
-    compile ('edu.internet2.middleware.grouper:grouper-ui:2.3.0') {
+    compileOnly ('edu.internet2.middleware.grouper:grouper-ui:2.3.0') {
         transitive = false
     }
-    compile 'edu.internet2.middleware.grouper:subject:2.3.0'
-    compile 'org.slf4j:slf4j-api:1.6.2'
-    compile 'org.hibernate:hibernate-core:5.0.4.Final'
+    compileOnly 'edu.internet2.middleware.grouper:subject:2.3.0'
+    compileOnly 'org.slf4j:slf4j-api:1.6.2'
+    compileOnly 'org.hibernate:hibernate-core:5.0.4.Final'
 }
 
-docker {
-    dockerHost = System.env['DOCKER_HOST']?.replace("tcp", "http");
-}
+//docker {
+//    dockerHost = System.env['DOCKER_HOST']?.replace("tcp", "http");
+//}
 
 task copyDocker(type: Copy) {
     from 'src/test/docker-compose/'
