@@ -21,6 +21,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import edu.internet2.middleware.grouper.*;
+import edu.internet2.middleware.grouper.app.provisioning.GrouperProvisioningAttributeValue;
+import edu.internet2.middleware.grouper.app.provisioning.GrouperProvisioningService;
+import edu.internet2.middleware.grouper.app.provisioning.GrouperProvisioningSettings;
+import edu.internet2.middleware.grouper.app.provisioning.GrouperProvisioningTarget;
+import edu.internet2.middleware.grouper.app.provisioning.ProvisionableGroupFinder;
 import edu.internet2.middleware.grouper.attr.AttributeDefName;
 import edu.internet2.middleware.grouper.attr.finder.AttributeDefNameFinder;
 
@@ -35,11 +40,17 @@ import edu.internet2.middleware.grouper.ui.util.GrouperUiConfig;
 import edu.internet2.middleware.grouper.ui.util.GrouperUiUtils;
 
 import edu.internet2.middleware.grouper.userData.GrouperUserDataApi;
+import edu.internet2.middleware.grouper.util.GrouperUtil;
+import edu.internet2.middleware.subject.Subject;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -54,6 +65,8 @@ public class UiV2GroupProvisioningTarget {
 
     public static final String GROUPER_PROVISIONING_TARGET_CANDIDATE_ATTRIBUTE_DEF_NAME = "custom.provisioningTargetCandidate.attributeDefName";
 
+    /** logger */
+    private static final Log LOG = GrouperUtil.getLog(UiV2GroupProvisioningTarget.class);
 
     /**
      * Custom attributes handling
@@ -62,6 +75,8 @@ public class UiV2GroupProvisioningTarget {
     public void groupEditAttributes(final HttpServletRequest request, HttpServletResponse response) {
         final String provisioningTargetCandidateAttributeDefName = GrouperUiConfig.retrieveConfig().propertyValueStringRequired(
                 GROUPER_PROVISIONING_TARGET_CANDIDATE_ATTRIBUTE_DEF_NAME);
+
+        final Subject loggedInSubject = GrouperUiFilter.retrieveSubjectLoggedIn();
 
         withCurrentGroupAndSession(request, new CurrentGroupAndSessionCallback() {
 
@@ -77,15 +92,69 @@ public class UiV2GroupProvisioningTarget {
                         assignedGroupAttributes.put(attr.getName(), buildUiElement(attr.getName(), val));
                     }
 
+                    /* new provisioner objects */
+                    Set<String> configuredProvisioners = GrouperUtil.splitTrimToSet(
+                            GrouperUiConfig.retrieveConfig().propertyValueString("custom.provisioningTarget2.targetNames"), ",");
+
+                    if (configuredProvisioners == null) {
+                        configuredProvisioners = Collections.emptySet();
+                    }
+
+                    Map<String, List<Map<String, Object>>> provisioningTarget2Sections = new HashMap<>();
+
+                    Map<String, GrouperProvisioningTarget> allTargets = GrouperProvisioningSettings.getTargets(true);
+
+                    // loop each provisioner
+                    for (String configId : configuredProvisioners) {
+                        if (!allTargets.containsKey(configId)) {
+                            LOG.error("Target '" + configId + "' defined in custom.provisioningTarget2.targetNames is an invalid provisioner name. Usable values are [" + GrouperUtil.join(allTargets.keySet().toArray(), ", ") + "]");
+                            continue;
+                        }
+                        GrouperProvisioningTarget grouperProvisioningTarget = allTargets.get(configId);
+
+                        boolean canAssignProvisioning = GrouperProvisioningService.isTargetEditable(grouperProvisioningTarget, loggedInSubject, group);
+                        if (!canAssignProvisioning) {
+                            LOG.warn("User not allowed to manager provisioner " + configId + ": " + loggedInSubject);
+                            continue;
+                        }
+
+                        Map<String, Object> provPOJO = new HashMap<>();
+
+                        String label = GrouperUiConfig.retrieveConfig().propertyValueString(
+                                "custom.provisioningTarget2.targets." + configId + ".label",
+                                "Sync to " + configId);
+                        String description = GrouperUiConfig.retrieveConfig().propertyValueString(
+                                "custom.provisioningTarget2.targets." + configId + ".description",
+                                "Setting this to 'yes' will push this group and its members to " + configId + ".");
+                        provPOJO.put("id", configId);
+                        provPOJO.put("label", label);
+                        provPOJO.put("description", description);
+
+                        GrouperProvisioningAttributeValue provAttribute = new ProvisionableGroupFinder().assignGroup(group).assignTargetName(configId).findProvisionableGroupAttributeValue();
+                        boolean isProvisioned = provAttribute == null ? false : provAttribute.isDoProvision();
+                        provPOJO.put("isProvisioned", isProvisioned);
+
+                        String section = GrouperUiConfig.retrieveConfig().propertyValueString(
+                                "custom.provisioningTarget2.targets." + configId + ".section",
+                                grouperProvisioningTarget.getName());
+                        provPOJO.put("section", section);
+
+                        if (!provisioningTarget2Sections.containsKey(section)) {
+                            provisioningTarget2Sections.put(section, new ArrayList<Map<String, Object>>());
+                        }
+                        provisioningTarget2Sections.get(section).add(provPOJO);
+                    }
+
                     //Send the data to the jsp
                     request.setAttribute("attributeDefinitions", attributeDefinitionsByFolderName);
                     request.setAttribute("assignedGroupAttributes", assignedGroupAttributes);
-                    GuiResponseJs.retrieveGuiResponseJs().addAction(GuiScreenAction.newInnerHtmlFromJsp(MAIN_CONTENT_DIV_ID, PROVISIONING_TARGETS_JSP));
+                    request.setAttribute("provisioningTarget2Sections", provisioningTarget2Sections);
                 } else {
-                    //UI dance
-                    GuiResponseJs guiResponseJs = GuiResponseJs.retrieveGuiResponseJs();
-                    guiResponseJs.addAction(GuiScreenAction.newMessage(GuiMessageType.success, "This group is not authorized for provisioning."));
+                    request.setAttribute("attributeDefinitions", null);
+                    request.setAttribute("assignedGroupAttributes", null);
+                    request.setAttribute("provisioningTarget2Sections", null);
                 }
+                GuiResponseJs.retrieveGuiResponseJs().addAction(GuiScreenAction.newInnerHtmlFromJsp(MAIN_CONTENT_DIV_ID, PROVISIONING_TARGETS_JSP));
             }
         });
 
@@ -133,6 +202,93 @@ public class UiV2GroupProvisioningTarget {
             }
         });
 
+    }
+
+    /**
+     * edit and assign attribute values.
+     *
+     * @param request
+     * @param response
+     */
+    public void groupEditAttributes2Submit(final HttpServletRequest request, HttpServletResponse response) {
+        final Subject loggedInSubject = GrouperUiFilter.retrieveSubjectLoggedIn();
+        withCurrentGroupAndSession(request, new CurrentGroupAndSessionCallback() {
+
+            @Override
+            public void doWithGroupAndSession(Group group, GrouperSession session) {
+                Set<String> configuredProvisioners = GrouperUtil.splitTrimToSet(
+                        GrouperUiConfig.retrieveConfig().propertyValueString("custom.provisioningTarget2.targetNames"), ",");
+
+                if (configuredProvisioners == null) {
+                    configuredProvisioners = Collections.emptySet();
+                }
+
+                Map<String, GrouperProvisioningTarget> allTargets = GrouperProvisioningSettings.getTargets(true);
+
+                for (String configId : configuredProvisioners) {
+                    if (!allTargets.containsKey(configId)) {
+                        LOG.error("Target '" + configId + "' defined in custom.provisioningTarget2.targetNames is an invalid provisioner name. Usable values are [" + GrouperUtil.join(allTargets.keySet().toArray(), ", ") + "]");
+                        continue;
+                    }
+
+                    GrouperProvisioningTarget grouperProvisioningTarget = allTargets.get(configId);
+                    if (grouperProvisioningTarget == null) {
+                        throw new RuntimeException("Provisioner " + configId + " is an invalid provisioner name (not listed in custom.provisioningTarget2.targetNames");
+                    }
+
+                    String requestedValue = request.getParameter("provisioner-" + configId);
+                    if (requestedValue == null) {
+                        // this candidate not submitted
+                        continue;
+                    }
+
+                    boolean isProvisionable = false;
+                    if ("yes".equals(requestedValue)) {
+                        isProvisionable = true;
+                    } else if ("no".equals(requestedValue)) {
+                        isProvisionable = false;
+                    } else {
+                        throw new RuntimeException("Invalid value for setting: '" + requestedValue + "'");
+                    }
+
+                    // if not provisionable, this doesn't have the option of removing the attribute entirely; it keeps the provisioning setting but sets the value to false
+//                    GrouperProvisioningAttributeValue grouperProvisioningAttributeValue = new ProvisionableGroupSave().
+//                            assignReplaceAllSettings(true).
+//                            assignTargetName(configId).
+//                            assignGroup(group).
+//                            assignProvision(isProvisionable).
+//                            save();
+
+                    // this effectively deletes the attribute if it's not provisionable
+                    GrouperProvisioningAttributeValue attributeValue = new GrouperProvisioningAttributeValue();
+                    attributeValue.setDirectAssignment(isProvisionable);
+                    attributeValue.setDoProvision(isProvisionable ? configId : null);
+                    attributeValue.setTargetName(configId);
+
+                    if (isProvisionable) {
+                        GrouperProvisioningService.saveOrUpdateProvisioningAttributes(attributeValue, group);
+                    } else {
+                        GrouperProvisioningAttributeValue gpav = GrouperProvisioningService.getProvisioningAttributeValue(group, configId);
+                        if (gpav != null) {
+                            GrouperProvisioningService.deleteAttributeAssign(group, configId);
+                        }
+                    }
+                }
+
+                //UI dance
+                GuiResponseJs guiResponseJs = GuiResponseJs.retrieveGuiResponseJs();
+
+                //go to the view group screen
+                guiResponseJs.addAction(
+                        GuiScreenAction.newScript(String.format("guiV2link('operation=UiV2Group.viewGroup&groupId=%s')", group.getId())));
+
+                //lets show a success message on the new screen
+                guiResponseJs.addAction(GuiScreenAction.newMessage(GuiMessageType.success, "Data stored."));
+
+                GrouperUserDataApi.recentlyUsedGroupAdd(GrouperUiUserData.grouperUiGroupNameForUserData(),
+                        GrouperUiFilter.retrieveSubjectLoggedIn(), group);
+            }
+        });
     }
 
     private Map<Stem, Set<AttributeDefName>> getAllProvisioningTargetsAttributesGroupedByFolder(GrouperSession grouperSession) {

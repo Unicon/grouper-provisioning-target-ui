@@ -22,14 +22,76 @@ The core code can be compiled by running `./gradlew jar`. The artifact library/j
 (There is nothing to directly execute.)
 
 ## Properties
-The **Grouper UI settings** are used to control how the attributes are rendered on the Provisioning Target page.
+The **Grouper UI settings** are used to control how the attributes are rendered on the Provisioning Target page. In grouper-ui.properties,
+property `custom.provisioningTargetCandidate.attributeDefName` is set to an attribute name that must be present on a group or its ancestor
+folders for the form to be accessible. E.g.,
+
+`custom.provisioningTargetCandidate.attributeDefName = etc:attribute:provisioningTargets:provisioningCandidates`
+
+### Option 1 - Provisioner and configuration based form
+
+Configuration values match up with provisioner names in the new provisioning framework, both to govern which provisioners
+show up in the form, and how they are presented. For each provisioner, there is a drop-down list with yes/no options.
+Depending on the submitted value, provisioning will be enabled or removed for that provisioner.
+
+To avoid confusion with the older solution based on attribute-based properties, the property base name starts
+with `custom.provisioningTarget2.*`.
+
+Property `custom.provisioningTarget2.targetNames` is a comma-separated list of provisioners to manage through this UI.
+These need to match the actual provisioner names by configId. Each value in this list is a key for properties starting
+with `custom.provisioningTarget2.targets.{id}.` as defined below.
+
+Properties that can be set in grouper-ui.properties:
+
+|Property Name|Default Value|Notes|
+|-------------|-------------|-----|
+|custom.provisioningTarget2.targetNames|None|comma-separated list of provisioners to manage
+|custom.provisioningTarget2.targets.{id}.label|"Sync to {configId}"|Optional UI label next to the drop-down list
+|custom.provisioningTarget2.targets.{id}.description|Setting this to 'yes' will push this group and its members to {configId}.|Optional help text that appears underneath the drop-down list
+|custom.provisioningTarget2.targets.{id}.section|provisioner name|Entries are grouped into categories with a heading, and all entries with the same section will appear together
+
+
+An example configuration:
+
+```
+custom.provisioningTarget2.targetNames = invalid-name, LDAPIsMemberOf, AD, googleGroups
+
+# Since there isn't a provisioner with this name, it will log an error to the console, and ignore in the UI
+custom.provisioningTarget2.targets.invalid-name.label = Sync to Invalid Provisioner
+custom.provisioningTarget2.targets.invalid-name.description = You should not be seeing this
+custom.provisioningTarget2.targets.invalid-name.section = LDAP
+
+# Set a friendly name, detailed description, and section for the LDAP provisioner
+custom.provisioningTarget2.targets.LDAPIsMemberOf = Sync to LDAP
+custom.provisioningTarget2.targets.LDAPIsMemberOf = Setting this to "yes" will push this group and its members to LDAP. Any changes to the local group will continue to be pushed to LDAP. Setting this to "no" will remove the group members. To fully remove the group, delete it from Grouper.
+custom.provisioningTarget2.targets.LDAPIsMemberOf = LDAP
+
+# Since there is no label or description, it will set reasonable defaults. Note it will be in the same "LDAP" section as LDAPIsMemberOf
+custom.provisioningTarget2.targets.AD.section = LDAP
+
+# Note this is in its own section
+custom.provisioningTarget2.targets.googleGroups.label = Sync to Google Groups
+custom.provisioningTarget2.targets.googleGroups.description = Setting this to "yes" will push this group and its members to Google Groups. Any changes to the local group will continue to be pushed to Google. Setting this to "no" will remove the group from Google Groups.
+custom.provisioningTarget2.targets.googleGroups.section = Google
+```
+
+If there is an ACL authorization to set a particular provisioner on a group, it will be utilized, and the provisioner will not appear on the list if the user is not authorized. To access the page or submit changes in general, the user will need to have the ADMIN privilege for the group.
+
+### Option 2 - Attribute and configuration based form
+
+Form fields are driven by attribute names that exist in subfolders of `etc:attribute:provisioningTargets`. These subfolders will be used as
+the category names. Any attribute names within the subfolders will become form fields for the corresponding category. The attribute's display
+extension will become the field label, and the description will become the help text below the input element.
+
+Form fields will be text fields by default, but can be enhanced with configuration in grouper-ui.properties. The type of
+form element, default value, and list of select options can be configured.
 
 > Reference to [attributeName] in the following text refer to a fully qualified attribute name that has had the colons swapped for hyphens.
 > So `etc:attribute:provisioningTargets:google:googleFavoriteFood` needs to be "encoded" as `etc-attribute-provisioningTargets-google-googleFavoriteFood`.
 
 There are four types of elements that the attribute can be rendered as: Yes/No, True/False, user definable dropdown, and the default, a textbox.
 
-This is specified as `grouperUi.provisioningTarget.[attributeName].type=<type>`. Possible options include, `yesNo`, `trueFalse`, and `select`. If a 
+This is specified as `custom.provisioningTarget.[attributeName].type=<type>`. Possible options include, `yesNo`, `trueFalse`, and `select`. If a 
 textbox is desired, this property should be commented out, deleted, or left empty. 
  
 
@@ -45,7 +107,7 @@ must be `yes` or `no`, likewise the default value of a `trueFalse` type must be 
 ### Property Examples
 
 ```
-# Indicatess which attribute must be on a folder/group to allow it have Provisioning Targets assigned to it.
+# Indicates which attribute must be on a folder/group to allow it have Provisioning Targets assigned to it.
 custom.provisioningTargetCandidate.attributeDefName = etc:attribute:provisioningTargets:provisioningCandidates
 
 # A dropdown with no default.
