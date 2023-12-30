@@ -75,7 +75,9 @@ custom.provisioningTarget2.targets.googleGroups.description = Setting this to "y
 custom.provisioningTarget2.targets.googleGroups.section = Google
 ```
 
-If there is an ACL authorization to set a particular provisioner on a group, it will be utilized, and the provisioner will not appear on the list if the user is not authorized. To access the page or submit changes in general, the user will need to have the ADMIN privilege for the group.
+If the user is not in the wheel group, ADMIN privileges on the group are required to see the form. Also, the user will only
+see provisioners when they are in the associated ACL group that authorizes assigning the provisioner to the group
+(i.e., the group referred to by grouper-loader property `provisioner.{id}.groupAllowedToAssign`).
 
 ### Option 2 - Attribute and configuration based form
 

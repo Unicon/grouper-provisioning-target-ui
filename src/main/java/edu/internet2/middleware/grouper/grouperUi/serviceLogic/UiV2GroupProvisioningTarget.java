@@ -29,9 +29,11 @@ import edu.internet2.middleware.grouper.app.provisioning.ProvisionableGroupFinde
 import edu.internet2.middleware.grouper.attr.AttributeDefName;
 import edu.internet2.middleware.grouper.attr.finder.AttributeDefNameFinder;
 
+import edu.internet2.middleware.grouper.exception.GrouperSessionException;
 import edu.internet2.middleware.grouper.grouperUi.beans.json.GuiResponseJs;
 import edu.internet2.middleware.grouper.grouperUi.beans.json.GuiScreenAction;
 import edu.internet2.middleware.grouper.grouperUi.beans.json.GuiScreenAction.GuiMessageType;
+import edu.internet2.middleware.grouper.misc.GrouperSessionHandler;
 import edu.internet2.middleware.grouper.privs.AccessPrivilege;
 import edu.internet2.middleware.grouper.privs.AttributeDefPrivilege;
 import edu.internet2.middleware.grouper.ui.GrouperUiFilter;
@@ -114,7 +116,7 @@ public class UiV2GroupProvisioningTarget {
 
                         boolean canAssignProvisioning = GrouperProvisioningService.isTargetEditable(grouperProvisioningTarget, loggedInSubject, group);
                         if (!canAssignProvisioning) {
-                            LOG.warn("User not allowed to manager provisioner " + configId + ": " + loggedInSubject);
+                            LOG.debug("User not allowed to manager provisioner " + configId + ": " + loggedInSubject);
                             continue;
                         }
 
@@ -130,7 +132,8 @@ public class UiV2GroupProvisioningTarget {
                         provPOJO.put("label", label);
                         provPOJO.put("description", description);
 
-                        GrouperProvisioningAttributeValue provAttribute = new ProvisionableGroupFinder().assignGroup(group).assignTargetName(configId).findProvisionableGroupAttributeValue();
+                        // look up the provisioning attribute under user's context
+                        GrouperProvisioningAttributeValue provAttribute = new ProvisionableGroupFinder().assignGroup(group).assignTargetName(configId).assignRunAsRoot(true).findProvisionableGroupAttributeValue();
                         boolean isProvisioned = provAttribute == null ? false : provAttribute.isDoProvision();
                         provPOJO.put("isProvisioned", isProvisioned);
 
@@ -215,7 +218,7 @@ public class UiV2GroupProvisioningTarget {
         withCurrentGroupAndSession(request, new CurrentGroupAndSessionCallback() {
 
             @Override
-            public void doWithGroupAndSession(Group group, GrouperSession session) {
+            public void doWithGroupAndSession(final Group group, GrouperSession session) {
                 Set<String> configuredProvisioners = GrouperUtil.splitTrimToSet(
                         GrouperUiConfig.retrieveConfig().propertyValueString("custom.provisioningTarget2.targetNames"), ",");
 
@@ -225,7 +228,7 @@ public class UiV2GroupProvisioningTarget {
 
                 Map<String, GrouperProvisioningTarget> allTargets = GrouperProvisioningSettings.getTargets(true);
 
-                for (String configId : configuredProvisioners) {
+                for (final String configId : configuredProvisioners) {
                     if (!allTargets.containsKey(configId)) {
                         LOG.error("Target '" + configId + "' defined in custom.provisioningTarget2.targetNames is an invalid provisioner name. Usable values are [" + GrouperUtil.join(allTargets.keySet().toArray(), ", ") + "]");
                         continue;
@@ -260,19 +263,27 @@ public class UiV2GroupProvisioningTarget {
 //                            save();
 
                     // this effectively deletes the attribute if it's not provisionable
-                    GrouperProvisioningAttributeValue attributeValue = new GrouperProvisioningAttributeValue();
+                    final GrouperProvisioningAttributeValue attributeValue = new GrouperProvisioningAttributeValue();
                     attributeValue.setDirectAssignment(isProvisionable);
                     attributeValue.setDoProvision(isProvisionable ? configId : null);
                     attributeValue.setTargetName(configId);
 
-                    if (isProvisionable) {
-                        GrouperProvisioningService.saveOrUpdateProvisioningAttributes(attributeValue, group);
-                    } else {
-                        GrouperProvisioningAttributeValue gpav = GrouperProvisioningService.getProvisioningAttributeValue(group, configId);
-                        if (gpav != null) {
-                            GrouperProvisioningService.deleteAttributeAssign(group, configId);
+                    final boolean finalIsProvisionable = isProvisionable;
+                    GrouperSession.internal_callbackRootGrouperSession(new GrouperSessionHandler() {
+                        @Override
+                        public Object callback(GrouperSession theGrouperSession) throws GrouperSessionException {
+                            if (finalIsProvisionable) {
+                                GrouperProvisioningService.saveOrUpdateProvisioningAttributes(attributeValue, group);
+                            } else {
+                                GrouperProvisioningAttributeValue gpav = GrouperProvisioningService.getProvisioningAttributeValue(group, configId);
+                                if (gpav != null) {
+                                    GrouperProvisioningService.deleteAttributeAssign(group, configId);
+                                }
+                            }
+                            return null;
                         }
-                    }
+                    });
+
                 }
 
                 //UI dance
