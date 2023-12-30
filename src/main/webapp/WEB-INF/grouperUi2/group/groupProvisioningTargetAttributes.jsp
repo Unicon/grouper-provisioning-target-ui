@@ -11,69 +11,70 @@
               </div>
             </div>
 
-            <div class="row-fluid">
-                <div class="span12">
-                    <form id="editTarget2Provisioning" class="form-horizontal">
+            <c:if test="${empty attributeDefinitions && empty provisioningTarget2Sections}">
+                <div>
+                    You are not authorized to configure any provisioning targets.
+                </div>
 
-                        <input type="hidden" name="groupId" value="${grouperRequestContainer.groupContainer.guiGroup.group.id}" />
+                <div class="form-actions">
+                    <a href="#" class="btn btn-cancel" onclick="return guiV2link('operation=UiV2Group.viewGroup&groupId=${grouperRequestContainer.groupContainer.guiGroup.group.id}');" >Go back</a>
+                </div>
+            </c:if>
 
+            <c:if test="${not empty provisioningTarget2Sections}">
 
-                        <c:if test="${not empty provisioningTarget2Sections}">
-                            <div id="provTargets2MetadataId" >
+                <div class="row-fluid">
+                    <div class="span12">
+                        <form id="editTarget2Provisioning" class="form-horizontal">
 
-                                <c:forEach items="${provisioningTarget2Sections}" var="provisioningTarget">
-                                    <h3 class="page-header">${grouper:escapeHtml(provisioningTarget.key)}</h3>
+                            <input type="hidden" name="groupId" value="${grouperRequestContainer.groupContainer.guiGroup.group.id}" />
 
-                                    <c:forEach items="${provisioningTarget.value}" var="attr">
-                                        <div class="control-group">
-                                            <label for="provisioner-${attr.id}" class="control-label">${grouper:escapeHtml(attr.label)}:</label>
+                                <div id="provTargets2MetadataId" >
 
-                                            <div class="controls">
-                                                    <%--
-                                                    <input type="text" id="${grouper:escapeHtml(attr.name)}" name="${grouper:escapeHtml(attr.name)}"
-                                                           value="${grouper:escapeHtml(assignedGroupAttributes[attr.name])}"/>
-                                                    --%>
-                                                <select id="provisioner-${attr.id}" name="provisioner-${attr.id}">
-                                                    <option ${!attr.isProvisioned ? "selected" : ""}>no</option>
-                                                    <option ${attr.isProvisioned ? "selected" : ""}>yes</option>
-                                                </select>
-                                                <span class="help-block">${grouper:escapeHtml(attr.description)}</span>
+                                    <c:forEach items="${provisioningTarget2Sections}" var="provisioningTarget">
+                                        <h3 class="page-header">${grouper:escapeHtml(provisioningTarget.key)}</h3>
+
+                                        <c:forEach items="${provisioningTarget.value}" var="attr">
+                                            <div class="control-group">
+                                                <label for="provisioner-${attr.id}" class="control-label">${grouper:escapeHtml(attr.label)}:</label>
+
+                                                <div class="controls">
+                                                        <%--
+                                                        <input type="text" id="${grouper:escapeHtml(attr.name)}" name="${grouper:escapeHtml(attr.name)}"
+                                                               value="${grouper:escapeHtml(assignedGroupAttributes[attr.name])}"/>
+                                                        --%>
+                                                    <select id="provisioner-${attr.id}" name="provisioner-${attr.id}">
+                                                        <option ${!attr.isProvisioned ? "selected" : ""}>no</option>
+                                                        <option ${attr.isProvisioned ? "selected" : ""}>yes</option>
+                                                    </select>
+                                                    <span class="help-block">${grouper:escapeHtml(attr.description)}</span>
+                                                </div>
                                             </div>
-                                        </div>
+                                        </c:forEach>
+
                                     </c:forEach>
 
-                                </c:forEach>
-
-                            </div>
+                                </div>
 
 
-                            <div class="form-actions">
-                                <a href="#" class="btn btn-primary" onclick="ajax('../app/UiV2GroupProvisioningTarget.groupEditAttributes2Submit', {formIds: 'editTarget2Provisioning'}); return false;">Update</a>
-                                <a href="#" class="btn btn-cancel" onclick="return guiV2link('operation=UiV2Group.viewGroup&groupId=${grouperRequestContainer.groupContainer.guiGroup.group.id}');" >Cancel</a>
-                            </div>
-                        </c:if>
-                        <c:if test="${empty attributeDefinitions}">
-                            <div id="provTargetsMetadataId" >
-                                You are not authorized to configure any provisioning targets.
-                            </div>
+                                <div class="form-actions">
+                                    <a href="#" class="btn btn-primary" onclick="ajax('../app/UiV2GroupProvisioningTarget.groupEditAttributes2Submit', {formIds: 'editTarget2Provisioning'}); return false;">Update</a>
+                                    <a href="#" class="btn btn-cancel" onclick="return guiV2link('operation=UiV2Group.viewGroup&groupId=${grouperRequestContainer.groupContainer.guiGroup.group.id}');" >Cancel</a>
+                                </div>
+                        </form>
 
-                            <div class="form-actions">
-                                <a href="#" class="btn btn-cancel" onclick="return guiV2link('operation=UiV2Group.viewGroup&groupId=${grouperRequestContainer.groupContainer.guiGroup.group.id}');" >Go back</a>
-                            </div>
-                        </c:if>
-                    </form>
-
+                    </div>
                 </div>
-            </div>
+            </c:if>
 
-            <div class="row-fluid">
-              <div class="span12">
-              <form id="editTargetProvisioning" class="form-horizontal">
+            <c:if test="${not empty attributeDefinitions}">
+              <div class="row-fluid">
+                <div class="span12">
+                <form id="editTargetProvisioning" class="form-horizontal">
 
                 <input type="hidden" name="groupId" value="${grouperRequestContainer.groupContainer.guiGroup.group.id}" />
 
 
-                  <c:if test="${not empty attributeDefinitions}">
                   <div id="provTargetsMetadataId" >
 
                   <c:forEach items="${attributeDefinitions}" var="provisioningTarget">
@@ -103,17 +104,8 @@
                         <a href="#" class="btn btn-primary" onclick="ajax('../app/UiV2GroupProvisioningTarget.groupEditAttributesSubmit', {formIds: 'editTargetProvisioning'}); return false;">Update</a>
                         <a href="#" class="btn btn-cancel" onclick="return guiV2link('operation=UiV2Group.viewGroup&groupId=${grouperRequestContainer.groupContainer.guiGroup.group.id}');" >Cancel</a>
                     </div>
-                  </c:if>
-                  <c:if test="${empty attributeDefinitions}">
-                    <div id="provTargetsMetadataId" >
-                        You are not authorized to configure any provisioning targets.
-                    </div>
-
-                      <div class="form-actions">
-                          <a href="#" class="btn btn-cancel" onclick="return guiV2link('operation=UiV2Group.viewGroup&groupId=${grouperRequestContainer.groupContainer.guiGroup.group.id}');" >Go back</a>
-                      </div>
-                  </c:if>
                 </form>
 
                 </div>
               </div>
+            </c:if>
