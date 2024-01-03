@@ -62,9 +62,9 @@ custom.provisioningTarget2.targets.invalid-name.description = You should not be 
 custom.provisioningTarget2.targets.invalid-name.section = LDAP
 
 # Set a friendly name, detailed description, and section for the LDAP provisioner
-custom.provisioningTarget2.targets.LDAPIsMemberOf = Sync to LDAP
-custom.provisioningTarget2.targets.LDAPIsMemberOf = Setting this to "yes" will push this group and its members to LDAP. Any changes to the local group will continue to be pushed to LDAP. Setting this to "no" will remove the group members. To fully remove the group, delete it from Grouper.
-custom.provisioningTarget2.targets.LDAPIsMemberOf = LDAP
+custom.provisioningTarget2.targets.LDAPIsMemberOf.label = Sync to LDAP
+custom.provisioningTarget2.targets.LDAPIsMemberOf.description = Setting this to "yes" will push this group and its members to LDAP. Any changes to the local group will continue to be pushed to LDAP. Setting this to "no" will remove the group members. To fully remove the group, delete it from Grouper.
+custom.provisioningTarget2.targets.LDAPIsMemberOf.section = LDAP
 
 # Since there is no label or description, it will set reasonable defaults. Note it will be in the same "LDAP" section as LDAPIsMemberOf
 custom.provisioningTarget2.targets.AD.section = LDAP
