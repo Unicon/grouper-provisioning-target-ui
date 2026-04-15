@@ -2,26 +2,32 @@ Custom Provisioning Target Form
 ===============================
 
 ## Use Case
+
 Some users need to be able to configure provisioning related settings (attributes), but the Grouper UI doesn't currently make that very user friendly.
 
 ## Solution
+
 This solution will add functionality to the Grouper UI that enables group admins to configure various attribute related to provisioning.
  
 Grouper admins can define Grouper attributes and manage security around those attributes via the standard Grouper mechanisms. Forms-specific 
 metadata about each attribute is stored in the `grouper-ui.properties` file where element type, default values, and list of values can be specified. 
 
 ## Requirements
+
 This enhancement requires a functioning Grouper UI.
 
 ## Build and Installation
+
 The core code can be compiled by running `./gradlew jar`. The artifact library/jar will be found in `./build/libs/`. This jar needs to be placed in appropriate lib directory. It is `TOMCAT_HOME/webapps/grouper/WEB-INF/lib/`. (It is anticipated that this will be applied to a patched app directory.) 
 
 `src/main/webapp/WEB-INF/grouperUi2/group/` contains a directory structure and two jsp files that need to be placed in the expanded Grouper UI webapp: `TOMCAT_HOME/webapps/grouper/WEB-INF/grouperUi2/group/`.
 
 ## Execution
-(There is nothing to directly execute.)
+
+There is nothing to directly execute. The artifacts are the jar file and modified jsp files to inject into your Grouper installation
 
 ## Properties
+
 The **Grouper UI settings** are used to control how the attributes are rendered on the Provisioning Target page. In grouper-ui.properties,
 property `custom.provisioningTargetCandidate.attributeDefName` is set to an attribute name that must be present on a group or its ancestor
 folders for the form to be accessible. E.g.,
@@ -129,6 +135,7 @@ custom.provisioningTarget.etc-attribute-provisioningTargets-ad-adOrgUnit.default
 ```
 
 ## Permissions
+
 Folders or groups must be tagged with an attribute name, specified by the `custom.provisioningTargetCandidate.attributeDefName property`.
 Subjects that are allowed to create groups under this folder must have "Read Attribute" privs on the folder where the attribute is placed.
 The subjects must also have `view` privs on the attribute Def
@@ -137,40 +144,11 @@ By default, no provisioning targets attributes are available for subjects (group
  privs on the Attribute Def of the attribute set(s) that they are allowed to assign.  
 
 ## Local Development
-This project has been supplemented with Docker. Docker's usage allows for quickly deploying the deployed artifact to a
-consistent, repeatable, local Grouper environment, which facilitates consistent testing.
 
-Docker (or docker-machine/boot2docker for Windows and OS X installations) should be locally installed. If using docker-machine is being used
-the proper environment variables must be setup (i.e. those displayed by running `boot2docker up` or `docker-machine env <vm name>`). `docker-machine ip <vm name>` will return the IP of the 
+This project has been supplemented with a docker-compose set of containers -- postgres for the Grouper registry, ldap for subject source, and a custom Grouper image with the
+jar file and jsp file overlays.
 
-Running `gradle clean && gradle runContainer` will compile the jar, build on top of the `grouper-demo` image (this could take 10-20 minutes
- the first time depending upon the network bandwidth available), and start an image. The image can be connected to from a browser by going to the port . `docker ps` will display info about the running container. Running
- `docker exec -it grouper-dev bash` will allow one to connect into the running image. 
 
-When testing is complete, `exit` to leave the running container. Then run `gradle clean` to clean
-  the environment. Now you are ready to make the necessary code changes and start over again.
+Running `gradle clean && gradle runContainer` will compile the jar, intialize the Grouper database, and create the custom attributes and a test group to serve as an example setup
 
-The following test work against this container:
-
-Using jsmith (limited user):
-
-1. Create a group under Test/Provisioning Enabled Groups. From the group menu, select Provisioning Attributes. The no permissions message displayed.
-
-Using banderson (admin):
-
-1. Grant `read` and `update` privs to the `jsmith` user for the `etc:attribute:provisioningTargets:google:googleProvisioningTargetDef` attribute definition.
-
-Using jsmith:
-
-1. Refresh the page, and the Google attributes should appear.
-
-Using banderson (admin):
-
-1. Grant `read` and `update` privs to the `jsmith` user for the `etc:attribute:provisioningTargets:ad:adProvisioningTargetDef` attribute definition.
-
-Using jsmith:
-
-1. Refresh the page, and the AD attributes should appear as well.
-1. Set some values and save.
-1. Go back in an confirm the values saved properly.
-
+When `runContainer` completes, you should be able to access the application using http://localhost:8080/grouper/. The login username is GrouperSystem and password is "pass".

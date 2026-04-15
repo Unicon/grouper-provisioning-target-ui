@@ -64,23 +64,30 @@ task buildImage(type: Exec) {
     commandLine 'docker-compose', 'build'
 }
 
-task runContainer(type: Exec) {
-    dependsOn buildImage
+task initContainer(type: Exec) {
+    dependsOn jar
 
-    workingDir 'build/docker-compose'
-    commandLine 'docker-compose', 'up', '-d'
+    workingDir 'src/test/docker'
+    commandLine 'docker', 'compose', 'run', '-e', 'DEMO_RUN_GSH_INIT=true', 'grouper', 'gsh'
+}
+
+task runContainer(type: Exec) {
+    dependsOn jar, initContainer
+
+    workingDir 'src/test/docker'
+    commandLine 'docker', 'compose', 'up', '-d'
 }
 
 task stopContainer(type: Exec) {
-    workingDir 'build/docker-compose'
-    commandLine 'docker-compose', 'kill'
+    workingDir 'src/test/docker'
+    commandLine 'docker', 'compose', 'kill'
 }
 
 task removeContainer(type: Exec) {
     dependsOn stopContainer
 
-    workingDir 'build/docker-compose'
-    commandLine 'docker-compose', 'rm', '-f'
+    workingDir 'src/test/docker'
+    commandLine 'docker', 'compose', 'rm', '-f'
 }
 
 task resetContainer() {

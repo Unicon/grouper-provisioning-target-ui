@@ -1,0 +1,71 @@
+#version: '3'
+services:
+  postgres:
+    image: "postgres:15"
+    #restart: always
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=pass
+    #volumes:
+    #  - ./postgres/data:/var/lib/postgresql/data
+    command: postgres -c 'max_connections=1000'
+  ldap:
+    image: dinkel/openldap
+    volumes:
+      - ./ldap/data:/etc/ldap/prepopulate:ro
+      - ./ldap/schema/eduperson.ldif:/etc/ldap.dist/schema/eduperson.ldif
+    # - ldap-data:/var/lib/ldap
+    # - ldap-config:/etc/ldap
+    ports:
+      - '389:389'
+    environment:
+      - SLAPD_PASSWORD=secret
+      - SLAPD_CONFIG_PASSWORD=secret
+      - SLAPD_DOMAIN=example.edu
+      - SLAPD_ADDITIONAL_SCHEMAS=eduperson
+      - PATH=/scripts:$PATH
+      - LDAP_HOST=ldap
+      - LDAP_PORT=389
+
+
+  grouper:
+    image: "i2incommon/grouper:6.1.1"
+    depends_on:
+      - postgres
+      - ldap
+    ports:
+      - 8080:8080
+      - 8000:5005
+    command:
+      - quickstart
+    environment:
+      - GROUPERSYSTEM_QUICKSTART_PASS=pass
+      #- DEMO_RUN_GSH_INIT=
+      - GROUPER_CHOWN_DIRS=false
+      - GROUPER_START_DELAY_SECONDS=5
+      - GROUPER_TOMCAT_HTTP_PORT=8080
+      - GROUPER_WEBCLIENT_IS_SSL=false
+      - GROUPER_MORPHSTRING_ENCRYPT_KEY=abcd1234
+      - GROUPER_DATABASE_PASSWORD=pass
+      - GROUPER_DATABASE_USERNAME=postgres
+      - GROUPER_DATABASE_URL=jdbc:postgresql://postgres:5432/postgres
+      - GROUPER_AUTO_DDL_UPTOVERSION=6.*.*
+      - GROUPER_UI_CONFIGURATION_EDITOR_SOURCEIPADDRESSES=0.0.0.0/0
+      #- JPDA_ADDRESS=*:5005
+      #- GROUPER_EXTRA_CATALINA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+      #- GROUPER_GSH_JVMARGS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005
+    volumes:
+      - ./grouper/usr-local-bin/grouperScriptHooks.sh:/usr/local/bin/grouperScriptHooks.sh:ro
+      - ./grouper/initscripts:/opt/grouper/initscripts:ro
+      - ./grouper/conf:/opt/grouper/slashRoot/opt/grouper/grouperWebapp/WEB-INF/classes:ro
+    ### For the custom provisioning target ui
+      - ../../../build/libs/grouper-provisioning-target-ui-1.2.0-SNAPSHOT.jar:/opt/grouper/slashRoot/opt/grouper/grouperWebapp/WEB-INF/lib/grouper-provisioning-target-ui-1.2.0-SNAPSHOT.jar:ro
+      - ../../../src/main/webapp/WEB-INF/grouperUi2/group/groupProvisioningTargetAttributes.jsp:/opt/grouper/grouperWebapp/WEB-INF/grouperUi2/group/groupProvisioningTargetAttributes.jsp:ro
+      - ../../../src/main/webapp/WEB-INF/grouperUi2/group/groupMoreActionsButtonContents.jsp:/opt/grouper/slashRoot/opt/grouper/grouperWebapp/WEB-INF/grouperUi2/group/groupMoreActionsButtonContents.jsp:ro
+
+### To init the attributes, run:
+#   docker compose up -d postgres ldap
+#   docker compose run --rm -e DEMO_RUN_GSH_INIT=true grouper gsh
+#   docker compose up -d
