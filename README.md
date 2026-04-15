@@ -3,14 +3,15 @@ Custom Provisioning Target Form
 
 ## Use Case
 
-Some users need to be able to configure provisioning related settings (attributes), but the Grouper UI doesn't currently make that very user friendly.
+Some users need to be able to configure provisioning related settings (attributes), but older versions of the Grouper UI didn't make that very user friendly.
+Since v4.10.4 there is a native UI to easily manage provisioning on groups and folders, so this custom solution is less necessary.
 
 ## Solution
 
 This solution will add functionality to the Grouper UI that enables group admins to configure various attribute related to provisioning.
- 
-Grouper admins can define Grouper attributes and manage security around those attributes via the standard Grouper mechanisms. Forms-specific 
-metadata about each attribute is stored in the `grouper-ui.properties` file where element type, default values, and list of values can be specified. 
+
+Grouper admins can define Grouper attributes and manage security around those attributes via the standard Grouper mechanisms. Forms-specific
+metadata about each attribute is stored in the `grouper-ui.properties` file where element type, default values, and list of values can be specified.
 
 ## Requirements
 
@@ -18,9 +19,22 @@ This enhancement requires a functioning Grouper UI.
 
 ## Build and Installation
 
-The core code can be compiled by running `./gradlew jar`. The artifact library/jar will be found in `./build/libs/`. This jar needs to be placed in appropriate lib directory. It is `TOMCAT_HOME/webapps/grouper/WEB-INF/lib/`. (It is anticipated that this will be applied to a patched app directory.) 
+### Version Compatibility
 
-`src/main/webapp/WEB-INF/grouperUi2/group/` contains a directory structure and two jsp files that need to be placed in the expanded Grouper UI webapp: `TOMCAT_HOME/webapps/grouper/WEB-INF/grouperUi2/group/`.
+| Grouper Version | Use Release |
+|-----------------|-------------|
+| v6              | 1.2.0       |
+| v4              | 1.1.0       |
+
+See [CHANGELOG.md](CHANGELOG.md) for full version history.
+
+### Building
+
+The core code can be compiled by running `./gradlew jar`. The artifact library/jar will be found in `./build/libs/`. This jar needs to be placed in `/opt/grouper/grouperWebapp/WEB-INF/lib/` in the image.
+
+The JSP files in `src/main/webapp/WEB-INF/grouperUi2/group/` need to be placed in the image, into `/opt/grouper/grouperWebapp/WEB-INF/grouperUi2/group/`.
+
+Instead of these locations, they can be placed in the `/opt/grouper/slashRoot/opt/grouper/grouperWebapp/WEB-INF/...` directory. This will copy the original files to their final location at runtime. This is particularly useful for mounting the files at runtime instead of copying them into a derived Docker image.
 
 ## Execution
 
@@ -99,9 +113,9 @@ form element, default value, and list of select options can be configured.
 
 There are four types of elements that the attribute can be rendered as: Yes/No, True/False, user definable dropdown, and the default, a textbox.
 
-This is specified as `custom.provisioningTarget.[attributeName].type=<type>`. Possible options include, `yesNo`, `trueFalse`, and `select`. If a 
-textbox is desired, this property should be commented out, deleted, or left empty. 
- 
+This is specified as `custom.provisioningTarget.[attributeName].type=<type>`. Possible options include, `yesNo`, `trueFalse`, and `select`. If a
+textbox is desired, this property should be commented out, deleted, or left empty.
+
 
 |Property Name|Default Value|Notes|
 |-------------|-------------|-----|
@@ -109,8 +123,8 @@ textbox is desired, this property should be commented out, deleted, or left empt
 |custom.provisioningTarget.[attributeName].default|(n/a)|(optional) The value to set if no value is already set. (see below)|
 |custom.provisioningTarget.[attributeName].lov|(n/a)|a comma separate list of values|
 
-If it is a `select` type, the default value, if defined, needs to be in the `lov` list. If the type is `yesNo`, then the default value 
-must be `yes` or `no`, likewise the default value of a `trueFalse` type must be `true` or `false`, if defined.  
+If it is a `select` type, the default value, if defined, needs to be in the `lov` list. If the type is `yesNo`, then the default value
+must be `yes` or `no`, likewise the default value of a `trueFalse` type must be `true` or `false`, if defined.
 
 ### Property Examples
 
@@ -141,7 +155,7 @@ Subjects that are allowed to create groups under this folder must have "Read Att
 The subjects must also have `view` privs on the attribute Def
 
 By default, no provisioning targets attributes are available for subjects (group admins) to assign to their groups. Group admins must be given `read` and `update` (assign)
- privs on the Attribute Def of the attribute set(s) that they are allowed to assign.  
+ privs on the Attribute Def of the attribute set(s) that they are allowed to assign.
 
 ## Local Development
 
@@ -149,6 +163,18 @@ This project has been supplemented with a docker-compose set of containers -- po
 jar file and jsp file overlays.
 
 
-Running `gradle clean && gradle runContainer` will compile the jar, intialize the Grouper database, and create the custom attributes and a test group to serve as an example setup
+Running `gradle clean && gradle runContainer` will compile the jar, intialize the Grouper database, and create the custom attributes and a test group to serve as an example setup.
 
 When `runContainer` completes, you should be able to access the application using http://localhost:8080/grouper/. The login username is GrouperSystem and password is "pass".
+
+When finished, you can run gradle task `stopContainer` to stop the containers, or `removeContainer` to stop them and wipe them from the suspended container list.
+
+OUtside of Gradle, the containers can also be spun up directly using docker compose, using the following:
+
+```
+cd src/test/docker/
+docker compose up -d postgres ldap
+docker compose run -e DEMO_RUN_GSH_INIT=true grouper gsh
+docker compose up -d
+```
+
