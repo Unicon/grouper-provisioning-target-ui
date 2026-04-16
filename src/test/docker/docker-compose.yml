@@ -61,7 +61,7 @@ services:
       - ./grouper/initscripts:/opt/grouper/initscripts:ro
       - ./grouper/conf:/opt/grouper/slashRoot/opt/grouper/grouperWebapp/WEB-INF/classes:ro
     ### For the custom provisioning target ui
-      - ../../../build/libs/grouper-provisioning-target-ui-1.2.0-SNAPSHOT.jar:/opt/grouper/slashRoot/opt/grouper/grouperWebapp/WEB-INF/lib/grouper-provisioning-target-ui-1.2.0-SNAPSHOT.jar:ro
+      - ../../../build/libs/grouper-provisioning-target-ui-1.2.0.jar:/opt/grouper/slashRoot/opt/grouper/grouperWebapp/WEB-INF/lib/grouper-provisioning-target-ui-1.2.0.jar:ro
       - ../../../src/main/webapp/WEB-INF/grouperUi2/group/groupProvisioningTargetAttributes.jsp:/opt/grouper/grouperWebapp/WEB-INF/grouperUi2/group/groupProvisioningTargetAttributes.jsp:ro
       - ../../../src/main/webapp/WEB-INF/grouperUi2/group/groupMoreActionsButtonContents.jsp:/opt/grouper/slashRoot/opt/grouper/grouperWebapp/WEB-INF/grouperUi2/group/groupMoreActionsButtonContents.jsp:ro
 
